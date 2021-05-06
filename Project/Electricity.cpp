@@ -8,7 +8,7 @@ const int CATEGORIES = 7; //all, coal, nat. gas, nuclear, hydro, wind, solar.
 
 void report(std::string year, std::string years[], std::string categories[], double * all_fuels_vals, double * coal_vals, double * natural_gas_vals, double * nuclear_vals, double * hydroelectric_vals, double * wind_vals, double * solar_vals);
 void yearOfPeakProduction(std::string category, std::string years[], std::string categories[], double* arrayOfArrays[]);
-void writeCSV(std::string category);
+void writeCSV(std::string category, std::string name, std::string years[], std::string categories[], double* arrayOfArrays[]);
 void loadArrays(std::ifstream &file, std::string years[], std::string categories[], double * all_fuels_vals, double * coal_vals, double * natural_gas_vals, double * nuclear_vals, double * hydroelectric_vals, double * wind_vals, double * solar_vals);
 
 int main(int argc, const char * argv[]){
@@ -36,14 +36,14 @@ int main(int argc, const char * argv[]){
 
     while(1){
         //Open file
-        std::ifstream file("Electricity2.txt");
+        std::ifstream file("Electricity.txt");
         std::cout << "$ ";
         if(file.is_open()){
             //Load file
             //Passing arrays to be initialized in loadFile() function
             loadArrays(file, years, categories, all_fuels_vals, coal_vals, natural_gas_vals, nuclear_vals, hydroelectric_vals, wind_vals, solar_vals);
             getline(cin, command);
-            if((command.find("a") | command.find("A"))){
+            if(command.find("a") != string::npos){
                 std::cout << "Please enter the year:" << std::endl;
                 std::string year;
                 getline(cin, year);
@@ -63,8 +63,8 @@ int main(int argc, const char * argv[]){
                     std::cout << "It was not possible to display a report: " << e.what() << std::endl;
                 }
             }
-            std::string category;
-            if((command.find("b") | command.find("B")) != string::npos){
+            if(command.find("b") != string::npos){
+                std::string category;
                 std::cout << "Please enter the category:" << std::endl;
                 getline(cin, category);
                 try{
@@ -83,7 +83,8 @@ int main(int argc, const char * argv[]){
                     std::cout << "It was not possible to display the year of peak production: " << e.what() << std::endl;
                 }
             }
-            if((command.find("c") | command.find("C")) != string::npos){
+            if(command.find("c") != string::npos){
+                std::string category;
                 std::cout << "Please enter the category for which you want a csv file:" << std::endl;
                 getline(cin, category);
                 try{
@@ -96,7 +97,10 @@ int main(int argc, const char * argv[]){
                         throw std::runtime_error("category not valid.");
                     }
                     //Write CSV File
-                    //writeCSV(std::string category);
+                    std::string fileName;
+                    std::cout << "Please enter the name for the file that will be generated:" << std::endl;
+                    std::cin >> fileName;
+                    writeCSV(category, fileName, years, categories, arrayOfArrays);
                 }
                 catch(std::exception e){
                     std::cout << "It was not possible to create the file: " << e.what() << std::endl;
@@ -118,11 +122,11 @@ void report(std::string year, std::string years[], std::string categories[], dou
         if(years[i] != year)
             yearIndex++;
     }
-    std::cout << "Coal\t" << coal_vals[yearIndex] << to_string((coal_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
-    std::cout << "Natural gas\t" << natural_gas_vals[yearIndex] << to_string((natural_gas_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
-    std::cout << "Nuclear\t" << nuclear_vals[yearIndex] << to_string((nuclear_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
-    std::cout << "Hydroelectric\t" << hydroelectric_vals[yearIndex] << to_string((hydroelectric_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
-    std::cout << "Wind\t" << wind_vals[yearIndex] << to_string((solar_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
+    std::cout << "Coal\t" << coal_vals[yearIndex] << '\t' << to_string((coal_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
+    std::cout << "Natural gas\t" << natural_gas_vals[yearIndex] << '\t' << to_string((natural_gas_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
+    std::cout << "Nuclear\t" << nuclear_vals[yearIndex] << '\t' << to_string((nuclear_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
+    std::cout << "Hydroelectric\t" << hydroelectric_vals[yearIndex] << '\t' << to_string((hydroelectric_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
+    std::cout << "Wind\t" << wind_vals[yearIndex] << '\t' << to_string((solar_vals[yearIndex]/all_fuels_vals[yearIndex])*100) + '%' << std::endl;
 }
 
 void yearOfPeakProduction(std::string category, std::string years[], std::string categories[], double* arrayOfArrays[]){
@@ -139,11 +143,49 @@ void yearOfPeakProduction(std::string category, std::string years[], std::string
             }
         }
     }
-    std::cout << "The peak production of electricity by " + category + " power of " << peakProduction << " thousand KWh occurred in " << peakYear << std::endl;
+    std::cout << "The peak production of electricity by " + category + " power of " << peakProduction << " thousand KWh occurred in " + peakYear << std::endl;
 }
 
-void writeCSV(std::string category){
-
+void writeCSV(std::string category, std::string name, std::string years[], std::string categories[], double* arrayOfArrays[]){
+    ofstream csvFile(name);
+    int option = 0;
+    bool valid = false;
+    std::cout << "Please specify the option for the file to be generated:" << std::endl;
+    std::cout << "1\tKWhs\n2\tPercentage of total energy produced in a given year" << std::endl;
+    while(!valid){    
+        std::cin >> option;
+        if(option == 1){
+            valid = true;
+            for(int i = 0; i < CATEGORIES; i++){
+                if(category == categories[i]){
+                    for(int j = 0; j < ARRAY_LENGTH; j++){
+                        csvFile << years[j];
+                        csvFile << ",";
+                        csvFile << arrayOfArrays[i][j];
+                        csvFile << "\n";
+                    }
+                }
+            }
+        }
+        if(option == 2){
+            valid = true;
+            for(int i = 0; i < CATEGORIES; i++){
+                if(category == categories[i]){
+                    for(int j = 0; j < ARRAY_LENGTH; j++){
+                        csvFile << years[j];
+                        csvFile << ",";
+                        csvFile << ((arrayOfArrays[i][j]/arrayOfArrays[0][j])*100);
+                        csvFile << "%";
+                        csvFile << "\n";
+                    }
+                }
+            }
+        }
+        if(option != 1 && option != 2){
+            std::cout << "Please enter a valid option." << std::endl;
+        }
+    }
+    csvFile.close();
 }
 
 void loadArrays(std::ifstream &file, std::string years[], std::string categories[], double * all_fuels_vals, double * coal_vals, double * natural_gas_vals, double * nuclear_vals, double * hydroelectric_vals, double * wind_vals, double * solar_vals){
@@ -152,38 +194,45 @@ void loadArrays(std::ifstream &file, std::string years[], std::string categories
     while(getline(file, line)){
         //Extract data
         if(line[0] == '2'){
-            std::size_t index = line.find('\t');
+            std::size_t index = 0;
             //Year
-            years[lineIndex] = line.substr(0, index);
-            index += 1;
-            line = line.substr(index, '\n');
+            years[lineIndex] = line.substr(index, line.find('\t'));
+            index = line.find('\t') + 1;
+            line = line.substr(index, string::npos);
+            
             //All fuels
             all_fuels_vals[lineIndex] = std::stod(line.substr(0, line.find('\t')));
             index = line.find('\t') + 1;
-            line = line.substr(index, '\n');
-            //Coal
-            coal_vals[lineIndex] = std::stod(line.substr(index, line.find('\t')));
-            index = line.find('\t') + 1;
-            line = line.substr(index, '\n');
-            //Natural gas
-            natural_gas_vals[lineIndex] = std::stod(line.substr(index, line.find('\t')));
-            index = line.find('\t') + 1;
-            line = line.substr(index, '\n');
-            //Nuclear
-            nuclear_vals[lineIndex] = std::stod(line.substr(index, line.find('\t')));
-            index = line.find('\t') + 1;
-            line = line.substr(index, '\n');
-            //Hydroelectric
-            hydroelectric_vals[lineIndex] = std::stod(line.substr(index, line.find('\t')));
-            index = line.find('\t') + 1;
-            line = line.substr(index, '\n');
-            //Wind
-            wind_vals[lineIndex] = std::stod(line.substr(index, line.find('\t')));
-            index = line.find('\t') + 1;
-            line = line.substr(index, '\n');
-            //Solar
-            solar_vals[lineIndex] = std::stod(line.substr(index, line.find('\n')));
+            line = line.substr(index, string::npos);
             
+            //Coal
+            coal_vals[lineIndex] = std::stod(line.substr(0, line.find('\t')));
+            index = line.find('\t') + 1;
+            line = line.substr(index, string::npos);
+            
+            //Natural gas
+            natural_gas_vals[lineIndex] = std::stod(line.substr(0, line.find('\t')));
+            index = line.find('\t') + 1;
+            line = line.substr(index, string::npos);
+            
+            //Nuclear
+            nuclear_vals[lineIndex] = std::stod(line.substr(0, line.find('\t')));
+            index = line.find('\t') + 1;
+            line = line.substr(index, string::npos);
+            
+            //Hydroelectric
+            hydroelectric_vals[lineIndex] = std::stod(line.substr(0, line.find('\t')));
+            index = line.find('\t') + 1;
+            line = line.substr(index, string::npos);
+            
+            //Wind
+            wind_vals[lineIndex] = std::stod(line.substr(0, line.find('\t')));
+            index = line.find('\t') + 1;
+            line = line.substr(index, string::npos);
+            
+            //Solar
+            solar_vals[lineIndex] = std::stod(line);
+        
             //TEST
             // std::cout << years[lineIndex] << '\t';
             // std::cout << all_fuels_vals[lineIndex] << '\t';
@@ -193,6 +242,7 @@ void loadArrays(std::ifstream &file, std::string years[], std::string categories
             // std::cout << hydroelectric_vals[lineIndex] << '\t';
             // std::cout << wind_vals[lineIndex] << '\t';
             // std::cout << solar_vals[lineIndex] << std::endl;
+            lineIndex++;
         }
     }
     
